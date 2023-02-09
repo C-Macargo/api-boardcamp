@@ -1,9 +1,9 @@
-import { db } from "../config/database.connection.js";
+import { db } from "../configs/database.connection.js";
 
 export async function listGames(_, res) {
     try {
       const games = await db.query('SELECT * FROM games');
-      res.send(games);
+      res.send(games.rows);
     } catch (error) {
       res.sendStatus(500);
     }
