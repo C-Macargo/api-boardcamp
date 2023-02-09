@@ -11,12 +11,18 @@ export async function listCustomers(_, res) {
 
 export async function listCustomersById(req, res) {
 	const { id } = req.params;
+
 	try {
 		const customer = await db.query(
 			"SELECT * FROM customers WHERE id =$1",
 			[id]
 		);
+		if (customer.rows.length > 0){
 		res.send(customer.rows[0]);
+		}else{
+			res.status(404).send("customer not found in the database")
+		}
+
 	} catch (err) {
 		res.status(500).send(err.message);
 	}
