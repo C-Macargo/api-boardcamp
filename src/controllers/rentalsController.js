@@ -29,8 +29,22 @@ export async function createRental(req, res) {
 		) {
 			return res.status(400).send("user or game do not exist");
 		}
+
 		const { pricePerDay } = gameInformation.rows[0];
 		const originalPrice = pricePerDay * daysRented;
+
+		const checkAvailability = await db.query(
+			'SELECT * FROM rentals WHERE "gameId" = $1',
+			[gameId]
+		);
+		const checkStock = await db.query(
+			'SELECT "stockTotal" FROM games WHERE id = $1',
+			[gameId]
+		);
+
+		if (checkStock.rows[0].stockTotal <= checkAvailability.rowCount) {
+			return res.status(400).send("out of stock");
+		}
 
 		await db.query(
 			`INSERT INTO rentals 
@@ -100,10 +114,9 @@ export async function deleteRental(req, res) {
 	const { id } = req.params;
 
 	try {
-		const rental = await db.query(
-			'SELECT * FROM rentals WHERE "id"=$1',
-			[id]
-		);
+		const rental = await db.query('SELECT * FROM rentals WHERE "id"=$1', [
+			id,
+		]);
 
 		if (rental.rowCount === 0) {
 			return res.status(404).send("rental does not exist");
