@@ -86,13 +86,15 @@ export async function returnRental(req, res) {
 		const { rentDate, daysRented, originalPrice, customerId, gameId } =
 			rental.rows[0];
 
-		let delayedTime = returnDate.getTime() - rentDate.getTime();
+		const refactoredRentDate = new Date(rentDate)
+
+		let delayedTime = returnDate.getTime() - refactoredRentDate.getTime();
 
 		const delayedDays = Math.floor(delayedTime / (1000 * 3600 * 24));
 
-		const delayFee = delayedDays * originalPrice;
+		const delayFee = (delayedDays - daysRented) * originalPrice 
 
-		if (delayedDays === 0) {
+		if (delayFee < 0) {
 			await db.query(
 				`UPDATE rentals SET "returnDate"=$1 WHERE id=$2 RETURNING *`,
 				[returnDay, id]
