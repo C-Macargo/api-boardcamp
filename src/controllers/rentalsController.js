@@ -95,3 +95,27 @@ export async function returnRental(req, res) {
 		return res.status(500).send(err.message);
 	}
 }
+
+export async function deleteRental(req, res) {
+	const { id } = req.params;
+
+	try {
+		const rental = await db.query(
+			'SELECT * FROM rentals WHERE "id"=$1',
+			[id]
+		);
+
+		if (rental.rowCount === 0) {
+			return res.status(404).send("rental does not exist");
+		}
+
+		if (rental.rows[0].returnDate === null) {
+			return res.status(400).send("rental not finished");
+		}
+
+		await db.query('DELETE FROM rentals WHERE "id"=$1', [id]);
+		return res.status(200).send("rental deleted");
+	} catch (err) {
+		return res.status(500).send(err.message);
+	}
+}
