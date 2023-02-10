@@ -51,3 +51,47 @@ export async function createRental(req, res) {
 		return res.status(500).send(err.message);
 	}
 }
+
+export async function returnRental(req, res) {
+	const { id } = req.params;
+	const returnDay = dayjs(Date.now()).format("YYYY-MM-DD");
+	const returnDate = new Date();
+
+	try {
+		const rental = await db.query('SELECT * FROM rentals WHERE "id" = $1', [
+			id,
+		]);
+
+		if (rental.rowCount === 0) {
+			return res.status(404).send("rental does not exist");
+		}
+
+		if (rental.rows[0].returnDate !== null) {
+			return res.status(400).send("rental is already finalized");
+		}
+		const { rentDate, daysRented, originalPrice, customerId, gameId } =
+			rental.rows[0];
+
+		let delayedTime = returnDate.getTime() - rentDate.getTime();
+
+		const delayedDays = Math.floor(delayedTime / (1000 * 3600 * 24));
+
+		const delayFee = delayedDays * originalPrice;
+
+		if (delayedDays === 0) {
+			await db.query(
+				`UPDATE rentals SET "returnDate"=$1 WHERE id=$2 RETURNING *`,
+				[returnDay, id]
+			);
+			return res.status(200).send("ok");
+		} else {
+			await db.query(
+				`UPDATE rentals SET "returnDate"=$1, "delayFee"=$2 WHERE id=$3 RETURNING *`,
+				[returnDay, delayFee, id]
+			);
+			return res.status(200).send("ok");
+		}
+	} catch (err) {
+		return res.status(500).send(err.message);
+	}
+}
