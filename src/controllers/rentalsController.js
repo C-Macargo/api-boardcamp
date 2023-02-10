@@ -92,7 +92,7 @@ export async function returnRental(req, res) {
 
 		const delayedDays = Math.floor(delayedTime / (1000 * 3600 * 24));
 
-		const delayFee = (delayedDays - daysRented) * originalPrice 
+		const delayFee = (delayedDays - daysRented) * (originalPrice / daysRented)
 
 		if (delayFee < 0) {
 			await db.query(
