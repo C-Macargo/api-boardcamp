@@ -3,9 +3,31 @@ import { db } from "../configs/database.connection.js";
 
 export async function listRentals(_, res) {
 	try {
-		const rentals = await db.query("SELECT * FROM rentals");
-		res.send(rentals.rows);
-	} catch (error) {
+		const rentals = await db.query(
+			`SELECT 
+                rentals.id,
+                rentals."customerId",
+                rentals."gameId",
+                rentals."rentDate",
+                rentals."daysRented",
+                rentals."returnDate",
+                rentals."originalPrice",
+                rentals."delayFee",
+                json_build_object (
+                    'id', customers.id,
+                    'name', customers.name
+                ) as "customer",
+                json_build_object (
+                    'id', games.id,
+                    'name', games.name
+                ) as "game"
+            FROM rentals 
+            JOIN customers ON rentals."customerId" = customers.id
+            JOIN games ON rentals."gameId" = games.id;`
+		);
+
+		return res.status(200).send(rentals.rows);
+	} catch (err) {
 		return res.status(500).send(err.message);
 	}
 }
@@ -86,13 +108,14 @@ export async function returnRental(req, res) {
 		const { rentDate, daysRented, originalPrice, customerId, gameId } =
 			rental.rows[0];
 
-		const refactoredRentDate = new Date(rentDate)
+		const refactoredRentDate = new Date(rentDate);
 
 		let delayedTime = returnDate.getTime() - refactoredRentDate.getTime();
 
 		const delayedDays = Math.floor(delayedTime / (1000 * 3600 * 24));
 
-		const delayFee = (delayedDays - daysRented) * (originalPrice / daysRented)
+		const delayFee =
+			(delayedDays - daysRented) * (originalPrice / daysRented);
 
 		if (delayFee < 0) {
 			await db.query(
